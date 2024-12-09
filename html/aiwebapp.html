@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snake Game</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #1a1a1a;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      background-color: #000;
+      border: 2px solid #fff;
+    }
+    .score {
+      position: absolute;
+      top: 10px;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="score">Score: <span id="score">0</span></div>
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreElement = document.getElementById('score');
+
+    const boxSize = 20; // Size of each box in the grid
+    const canvasSize = canvas.width / boxSize;
+    let score, snake, direction, food, gameInterval;
+    let isGameOver = false;
+
+    function resetGame() {
+      score = 0;
+      snake = [{ x: 5, y: 5 }];
+      direction = { x: 0, y: 0 }; // Start stationary
+      food = { x: Math.floor(Math.random() * canvasSize), y: Math.floor(Math.random() * canvasSize) };
+      isGameOver = false;
+
+      scoreElement.textContent = score;
+      if (gameInterval) clearInterval(gameInterval);
+      gameInterval = setInterval(updateGame, 150);
+    }
+
+    // Draw the grid, snake, and food
+    function drawGame() {
+      // Clear canvas
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw snake
+      ctx.fillStyle = '#0f0';
+      snake.forEach(part => {
+        ctx.fillRect(part.x * boxSize, part.y * boxSize, boxSize, boxSize);
+      });
+
+      // Draw food
+      ctx.fillStyle = '#f00';
+      ctx.fillRect(food.x * boxSize, food.y * boxSize, boxSize, boxSize);
+
+      // Update score
+      scoreElement.textContent = score;
+    }
+
+    function updateGame() {
+      if (isGameOver) return;
+
+      // Calculate next position
+      const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+      // Check for collisions
+      if (
+        head.x < 0 || head.x >= canvasSize ||
+        head.y < 0 || head.y >= canvasSize ||
+        snake.some(part => part.x === head.x && part.y === head.y)
+      ) {
+        gameOver();
+        return;
+      }
+
+      // Add new head
+      snake.unshift(head);
+
+      // Check if the snake ate the food
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        food = { x: Math.floor(Math.random() * canvasSize), y: Math.floor(Math.random() * canvasSize) };
+      } else {
+        // Remove the tail
+        snake.pop();
+      }
+
+      drawGame();
+    }
+
+    function gameOver() {
+      isGameOver = true;
+      clearInterval(gameInterval);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#fff';
+      ctx.font = '20px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2 - 10);
+      ctx.fillText('Press SPACE to restart', canvas.width / 2, canvas.height / 2 + 20);
+    }
+
+    // Change snake direction based on keypress
+    function changeDirection(event) {
+      const keyMap = {
+        ArrowUp: { x: 0, y: -1 },
+        ArrowDown: { x: 0, y: 1 },
+        ArrowLeft: { x: -1, y: 0 },
+        ArrowRight: { x: 1, y: 0 }
+      };
+
+      const newDirection = keyMap[event.key];
+      if (newDirection && !isGameOver) {
+        // Prevent snake from going back on itself
+        if (
+          (newDirection.x !== -direction.x && newDirection.y !== -direction.y) ||
+          snake.length === 1
+        ) {
+          direction = newDirection;
+        }
+      }
+
+      // Restart the game if SPACE is pressed after a Game Over
+      if (event.key === ' ' && isGameOver) {
+        resetGame();
+      }
+    }
+
+    document.addEventListener('keydown', changeDirection);
+
+    // Start the game
+    resetGame();
+  </script>
+</body>
+</html>
